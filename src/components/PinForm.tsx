@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import styled from "@emotion/styled";
 
 const FormContainer = styled.div`
@@ -45,6 +45,32 @@ const ButtonGroup = styled.div`
   justify-content: flex-end;
 `;
 
+const FileInputContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const FilePreview = styled.img`
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 4px;
+  display: ${(props) => (props.src ? "block" : "none")};
+`;
+
+const FileInputLabel = styled.label`
+  padding: 8px 16px;
+  background: #6c757d;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+
+  &:hover {
+    background: #5a6268;
+  }
+`;
+
 interface PinFormProps {
   onSubmit: (data: { name: string; photo: string; location: string }) => void;
   onCancel: () => void;
@@ -54,6 +80,18 @@ const PinForm = ({ onSubmit, onCancel }: PinFormProps) => {
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState("");
   const [location, setLocation] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,13 +108,21 @@ const PinForm = ({ onSubmit, onCancel }: PinFormProps) => {
           onChange={(e) => setName(e.target.value)}
           required
         />
-        <Input
-          type="text"
-          placeholder="Photo URL"
-          value={photo}
-          onChange={(e) => setPhoto(e.target.value)}
-          required
-        />
+        <FileInputContainer>
+          <FileInputLabel htmlFor="photo-upload">
+            {photo ? "Change Photo" : "Upload Photo"}
+          </FileInputLabel>
+          <input
+            id="photo-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={{ display: "none" }}
+            ref={fileInputRef}
+            required
+          />
+          <FilePreview src={photo} alt="Preview" />
+        </FileInputContainer>
         <Input
           type="text"
           placeholder="Location Description"

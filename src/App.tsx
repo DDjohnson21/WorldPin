@@ -103,7 +103,11 @@ function App() {
                   <img
                     src={pin.photo}
                     alt={pin.name}
-                    style={{ width: "100%", maxWidth: "200px" }}
+                    style={{
+                      width: "100%",
+                      maxWidth: "200px",
+                      borderRadius: "4px",
+                    }}
                   />
                   <p>{pin.location}</p>
                   <button onClick={() => handleDeletePin(pin.id)}>
