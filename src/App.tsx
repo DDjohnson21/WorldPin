@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styled from "@emotion/styled";
 import {
   MapContainer,
@@ -10,6 +10,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
 import PinForm from "./components/PinForm";
+import { githubService } from "./services/github";
 
 const AppContainer = styled.div`
   width: 100vw;
@@ -41,6 +42,7 @@ interface Pin {
   name: string;
   photo: string;
   location: string;
+  imagePath: string;
 }
 
 function MapEvents({
@@ -61,6 +63,7 @@ function App() {
   const [selectedPosition, setSelectedPosition] = useState<
     [number, number] | null
   >(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Define world bounds
   const worldBounds: [[number, number], [number, number]] = [
@@ -68,25 +71,70 @@ function App() {
     [85, 180],
   ];
 
+  useEffect(() => {
+    loadPins();
+  }, []);
+
+  const loadPins = async () => {
+    try {
+      const loadedPins = await githubService.getPins();
+      setPins(loadedPins);
+    } catch (error) {
+      console.error("Error loading pins:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleMapClick = (lat: number, lng: number) => {
     setSelectedPosition([lat, lng]);
   };
 
-  const handleAddPin = (pinData: Omit<Pin, "id" | "position">) => {
+  const handleAddPin = async (
+    pinData: Omit<Pin, "id" | "position" | "imagePath">
+  ) => {
     if (selectedPosition) {
-      const newPin: Pin = {
-        id: Date.now().toString(),
-        position: selectedPosition,
-        ...pinData,
-      };
-      setPins([...pins, newPin]);
-      setSelectedPosition(null);
+      try {
+        const pinId = Date.now().toString();
+        const imagePath = await githubService.uploadImage(
+          await fetch(pinData.photo)
+            .then((r) => r.blob())
+            .then(
+              (blob) => new File([blob], "image.jpg", { type: "image/jpeg" })
+            ),
+          pinId
+        );
+
+        const newPin: Pin = {
+          id: pinId,
+          position: selectedPosition,
+          ...pinData,
+          imagePath,
+        };
+
+        await githubService.savePin(newPin);
+        setPins([...pins, newPin]);
+        setSelectedPosition(null);
+      } catch (error) {
+        console.error("Error adding pin:", error);
+        alert("Failed to add pin. Please try again.");
+      }
     }
   };
 
-  const handleDeletePin = (id: string) => {
-    setPins(pins.filter((pin) => pin.id !== id));
+  const handleDeletePin = async (id: string) => {
+    try {
+      await githubService.deletePin(id);
+      setPins(pins.filter((pin) => pin.id !== id));
+    } catch (error) {
+      console.error("Error deleting pin:", error);
+      alert("Failed to delete pin. Please try again.");
+    }
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <AppContainer>
@@ -111,7 +159,7 @@ function App() {
                 <div>
                   <h3>{pin.name}</h3>
                   <img
-                    src={pin.photo}
+                    src={pin.imagePath}
                     alt={pin.name}
                     style={{
                       width: "100%",
