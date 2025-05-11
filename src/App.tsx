@@ -62,6 +62,12 @@ function App() {
     [number, number] | null
   >(null);
 
+  // Define world bounds
+  const worldBounds: [[number, number], [number, number]] = [
+    [-85, -180],
+    [85, 180],
+  ];
+
   const handleMapClick = (lat: number, lng: number) => {
     setSelectedPosition([lat, lng]);
   };
@@ -88,6 +94,10 @@ function App() {
         <MapContainer
           center={[20, 0]}
           zoom={2}
+          minZoom={2}
+          maxBounds={worldBounds}
+          maxBoundsViscosity={1.0}
+          worldCopyJump={false}
           style={{ height: "100%", width: "100%" }}
         >
           <MapEvents onMapClick={handleMapClick} />
