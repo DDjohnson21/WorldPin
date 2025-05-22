@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import styled from "@emotion/styled";
+import imageCompression from "browser-image-compression";
 
 const FormContainer = styled.div`
   position: fixed;
@@ -82,14 +83,22 @@ const PinForm = ({ onSubmit, onCancel }: PinFormProps) => {
   const [location, setLocation] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhoto(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedFile = await imageCompression(file, {
+          maxSizeMB: 0.2,
+          maxWidthOrHeight: 800,
+        });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhoto(reader.result as string);
+        };
+        reader.readAsDataURL(compressedFile);
+      } catch (err) {
+        alert("Failed to compress image.");
+      }
     }
   };
 
