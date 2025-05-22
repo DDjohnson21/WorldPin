@@ -96,21 +96,30 @@ class GitHubService {
   async uploadImage(file: File, pinId: string): Promise<string> {
     const imagePath = `images/${pinId}_${file.name}`;
     const content = await this.fileToBase64(file);
-    
-    try {
-      const response = await fetch(`${this.baseUrl}/contents/${imagePath}`, {
+    const upload = async (sha?: string) => {
+      const body: any = {
+        message: `Upload image for pin ${pinId}`,
+        content,
+      };
+      if (sha) body.sha = sha;
+      return fetch(`${this.baseUrl}/contents/${imagePath}`, {
         method: 'PUT',
         headers: this.headers,
-        body: JSON.stringify({
-          message: `Upload image for pin ${pinId}`,
-          content,
-        }),
+        body: JSON.stringify(body),
       });
-
+    };
+    try {
+      let response = await upload();
+      if (response.status === 409) {
+        // File exists, get SHA and retry
+        const sha = await this.getFileSha(imagePath);
+        if (sha) {
+          response = await upload(sha);
+        }
+      }
       if (!response.ok) {
         throw new Error('Failed to upload image');
       }
-
       return `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${imagePath}`;
     } catch (error) {
       console.error('Error uploading image:', error);
