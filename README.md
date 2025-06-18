@@ -1,6 +1,5 @@
 # WorldPin
-
-A simple web application that allows users to place pins on a world map and add their information to each pin.
+ Interactive Geolocation web platform that lets users mark meaningful locations on a world map by placing red pins, adding personal info, and linking photos. Designed to showcase global experiences or memories visually, WorldPin enables individuals or teams to create a shared digital map of stories. Implemented interactive features including popups, persistent state, and pin management using OpenStreetMap and React-Leaflet, with a focus on simplicity, usability, and engagement.
 
 ## Features
 
