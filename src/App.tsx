@@ -11,6 +11,7 @@ import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
 import PinForm from "./components/PinForm";
 import { githubService } from "./services/github";
+import LoginModal from "./components/LoginModal";
 
 const AppContainer = styled.div`
   width: 100vw;
@@ -58,12 +59,16 @@ function MapEvents({
   return null;
 }
 
+const USERNAME = import.meta.env.VITE_USERNAME_LOGIN || "WorldTravelerGuide401";
+const PASSWORD = import.meta.env.VITE_PASSWORD_LOGIN || "Flight@Rome88";
+
 function App() {
   const [pins, setPins] = useState<Pin[]>([]);
   const [selectedPosition, setSelectedPosition] = useState<
     [number, number] | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Define world bounds
   const worldBounds: [[number, number], [number, number]] = [
@@ -131,6 +136,17 @@ function App() {
       alert("Failed to delete pin. Please try again.");
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <LoginModal
+        onLogin={(u, p) => {
+          if (u === USERNAME && p === PASSWORD) setIsAuthenticated(true);
+          else alert("Invalid credentials");
+        }}
+      />
+    );
+  }
 
   if (isLoading) {
     return <div>Loading...</div>;
