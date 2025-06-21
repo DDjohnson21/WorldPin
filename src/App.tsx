@@ -10,6 +10,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
 import PinForm from "./components/PinForm";
+import EditPinForm from "./components/EditPinForm";
 import { githubService } from "./services/github";
 import LoginModal from "./components/LoginModal";
 
@@ -67,6 +68,7 @@ function App() {
   const [selectedPosition, setSelectedPosition] = useState<
     [number, number] | null
   >(null);
+  const [editingPin, setEditingPin] = useState<Pin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -137,6 +139,48 @@ function App() {
     }
   };
 
+  const handleEditPin = async (pinData: {
+    name: string;
+    photo: string;
+    location: string;
+    removeImage: boolean;
+  }) => {
+    if (editingPin) {
+      try {
+        let imagePath = editingPin.imagePath;
+
+        // Handle image changes
+        if (pinData.removeImage) {
+          imagePath = "";
+        } else if (pinData.photo !== editingPin.imagePath) {
+          // New image uploaded
+          const file = await fetch(pinData.photo)
+            .then((r) => r.blob())
+            .then(
+              (blob) => new File([blob], "image.jpg", { type: "image/jpeg" })
+            );
+          imagePath = await githubService.uploadImage(file, editingPin.id);
+        }
+
+        const updatedPin: Pin = {
+          ...editingPin,
+          name: pinData.name,
+          location: pinData.location,
+          imagePath,
+        };
+
+        await githubService.updatePin(editingPin.id, updatedPin);
+        setPins(
+          pins.map((pin) => (pin.id === editingPin.id ? updatedPin : pin))
+        );
+        setEditingPin(null);
+      } catch (error) {
+        console.error("Error updating pin:", error);
+        alert("Failed to update pin. Please try again.");
+      }
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <LoginModal
@@ -174,19 +218,50 @@ function App() {
               <Popup>
                 <div>
                   <h3>{pin.name}</h3>
-                  <img
-                    src={pin.imagePath}
-                    alt={pin.name}
-                    style={{
-                      width: "100%",
-                      maxWidth: "200px",
-                      borderRadius: "4px",
-                    }}
-                  />
+                  {pin.imagePath && (
+                    <img
+                      src={pin.imagePath}
+                      alt={pin.name}
+                      style={{
+                        width: "100%",
+                        maxWidth: "200px",
+                        borderRadius: "4px",
+                      }}
+                    />
+                  )}
                   <p>{pin.location}</p>
-                  <button onClick={() => handleDeletePin(pin.id)}>
-                    Delete Pin
-                  </button>
+                  <div
+                    style={{ display: "flex", gap: "8px", marginTop: "8px" }}
+                  >
+                    <button
+                      onClick={() => setEditingPin(pin)}
+                      style={{
+                        padding: "4px 8px",
+                        background: "#007bff",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Edit Pin
+                    </button>
+                    <button
+                      onClick={() => handleDeletePin(pin.id)}
+                      style={{
+                        padding: "4px 8px",
+                        background: "#dc3545",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Delete Pin
+                    </button>
+                  </div>
                 </div>
               </Popup>
             </Marker>
@@ -197,6 +272,13 @@ function App() {
         <PinForm
           onSubmit={handleAddPin}
           onCancel={() => setSelectedPosition(null)}
+        />
+      )}
+      {editingPin && (
+        <EditPinForm
+          pin={editingPin}
+          onSubmit={handleEditPin}
+          onCancel={() => setEditingPin(null)}
         />
       )}
     </AppContainer>

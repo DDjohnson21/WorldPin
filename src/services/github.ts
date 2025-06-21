@@ -93,6 +93,39 @@ class GitHubService {
     }
   }
 
+  async updatePin(pinId: string, updatedData: Partial<GitHubPin>): Promise<void> {
+    const pins = await this.getPins();
+    const pinIndex = pins.findIndex(pin => pin.id === pinId);
+    
+    if (pinIndex === -1) {
+      throw new Error('Pin not found');
+    }
+
+    // Update the pin with new data
+    pins[pinIndex] = { ...pins[pinIndex], ...updatedData };
+    
+    const content = btoa(JSON.stringify(pins, null, 2));
+    
+    try {
+      const response = await fetch(`${this.baseUrl}/contents/${PINS_FILE_PATH}`, {
+        method: 'PUT',
+        headers: this.headers,
+        body: JSON.stringify({
+          message: `Update pin ${pinId}`,
+          content,
+          sha: await this.getFileSha(PINS_FILE_PATH),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update pin');
+      }
+    } catch (error) {
+      console.error('Error updating pin:', error);
+      throw error;
+    }
+  }
+
   async uploadImage(file: File, pinId: string): Promise<string> {
     const imagePath = `images/${pinId}_${file.name}`;
     const content = await this.fileToBase64(file);
