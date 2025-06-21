@@ -224,8 +224,12 @@ function App() {
                       alt={pin.name}
                       style={{
                         width: "100%",
-                        maxWidth: "200px",
-                        borderRadius: "4px",
+                        height: "auto",
+                        maxHeight: "300px",
+                        borderRadius: "8px",
+                        display: "block",
+                        margin: "10px 0",
+                        objectFit: "cover",
                       }}
                     />
                   )}
