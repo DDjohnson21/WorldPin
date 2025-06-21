@@ -11,7 +11,7 @@ import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
 import PinForm from "./components/PinForm";
 import EditPinForm from "./components/EditPinForm";
-import { githubService } from "./services/github";
+import { hybridDataService } from "./services/hybridData";
 import LoginModal from "./components/LoginModal";
 
 const AppContainer = styled.div`
@@ -84,8 +84,12 @@ function App() {
 
   const loadPins = async () => {
     try {
-      const loadedPins = await githubService.getPins();
+      const loadedPins = await hybridDataService.getPins();
       setPins(loadedPins);
+
+      // Log which service is being used
+      const serviceInfo = hybridDataService.getServiceInfo();
+      console.log(`Using ${serviceInfo.type} data service`);
     } catch (error) {
       console.error("Error loading pins:", error);
     } finally {
@@ -103,7 +107,7 @@ function App() {
     if (selectedPosition) {
       try {
         const pinId = Date.now().toString();
-        const imagePath = await githubService.uploadImage(
+        const imagePath = await hybridDataService.uploadImage(
           await fetch(pinData.photo)
             .then((r) => r.blob())
             .then(
@@ -119,7 +123,7 @@ function App() {
           imagePath,
         };
 
-        await githubService.savePin(newPin);
+        await hybridDataService.savePin(newPin);
         setPins([...pins, newPin]);
         setSelectedPosition(null);
       } catch (error) {
@@ -131,7 +135,7 @@ function App() {
 
   const handleDeletePin = async (id: string) => {
     try {
-      await githubService.deletePin(id);
+      await hybridDataService.deletePin(id);
       setPins(pins.filter((pin) => pin.id !== id));
     } catch (error) {
       console.error("Error deleting pin:", error);
@@ -159,7 +163,7 @@ function App() {
             .then(
               (blob) => new File([blob], "image.jpg", { type: "image/jpeg" })
             );
-          imagePath = await githubService.uploadImage(file, editingPin.id);
+          imagePath = await hybridDataService.uploadImage(file, editingPin.id);
         }
 
         const updatedPin: Pin = {
@@ -169,7 +173,7 @@ function App() {
           imagePath,
         };
 
-        await githubService.updatePin(editingPin.id, updatedPin);
+        await hybridDataService.updatePin(editingPin.id, updatedPin);
         setPins(
           pins.map((pin) => (pin.id === editingPin.id ? updatedPin : pin))
         );

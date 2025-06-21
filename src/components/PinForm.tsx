@@ -52,6 +52,33 @@ const FileInputContainer = styled.div`
   gap: 8px;
 `;
 
+const DragDropZone = styled.div<{ isDragOver: boolean }>`
+  border: 2px dashed ${(props) => (props.isDragOver ? "#007bff" : "#ccc")};
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  background: ${(props) => (props.isDragOver ? "#f8f9fa" : "white")};
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:hover {
+    border-color: #007bff;
+    background: #f8f9fa;
+  }
+`;
+
+const DragDropText = styled.p`
+  margin: 0;
+  color: #6c757d;
+  font-size: 14px;
+`;
+
 const FilePreview = styled.img`
   max-width: 100%;
   max-height: 200px;
@@ -81,25 +108,69 @@ const PinForm = ({ onSubmit, onCancel }: PinFormProps) => {
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState("");
   const [location, setLocation] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const processImageFile = async (file: File) => {
+    if (file && file.type.startsWith("image/")) {
+      setIsProcessing(true);
+      try {
+        // Skip compression for small files (under 300KB)
+        let processedFile = file;
+        if (file.size > 300 * 1024) {
+          processedFile = await imageCompression(file, {
+            maxSizeMB: 0.8, // Increased for faster processing
+            maxWidthOrHeight: 1500, // Increased for less resizing
+            useWebWorker: true,
+            fileType: "image/jpeg",
+          });
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhoto(reader.result as string);
+          setIsProcessing(false);
+        };
+        reader.readAsDataURL(processedFile);
+      } catch (err) {
+        alert("Failed to process image.");
+        setIsProcessing(false);
+      }
+    } else {
+      alert("Please select an image file.");
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      try {
-        const compressedFile = await imageCompression(file, {
-          maxSizeMB: 0.2,
-          maxWidthOrHeight: 800,
-        });
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPhoto(reader.result as string);
-        };
-        reader.readAsDataURL(compressedFile);
-      } catch (err) {
-        alert("Failed to compress image.");
-      }
+      await processImageFile(file);
     }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      await processImageFile(files[0]);
+    }
+  };
+
+  const handleDragDropClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -118,11 +189,32 @@ const PinForm = ({ onSubmit, onCancel }: PinFormProps) => {
           required
         />
         <FileInputContainer>
-          <FileInputLabel htmlFor="photo-upload">
-            {photo ? "Change Photo" : "Upload Photo"}
-          </FileInputLabel>
+          <DragDropZone
+            isDragOver={isDragOver}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleDragDropClick}
+          >
+            {isProcessing ? (
+              <>
+                <DragDropText>⏳</DragDropText>
+                <DragDropText>Processing image...</DragDropText>
+              </>
+            ) : photo ? (
+              <>
+                <FilePreview src={photo} alt="Preview" />
+                <DragDropText>Click or drag to change photo</DragDropText>
+              </>
+            ) : (
+              <>
+                <DragDropText>📷</DragDropText>
+                <DragDropText>Drag & drop an image here</DragDropText>
+                <DragDropText>or click to browse</DragDropText>
+              </>
+            )}
+          </DragDropZone>
           <input
-            id="photo-upload"
             type="file"
             accept="image/*"
             onChange={handleFileChange}
@@ -130,7 +222,6 @@ const PinForm = ({ onSubmit, onCancel }: PinFormProps) => {
             ref={fileInputRef}
             required
           />
-          <FilePreview src={photo} alt="Preview" />
         </FileInputContainer>
         <Input
           type="text"
