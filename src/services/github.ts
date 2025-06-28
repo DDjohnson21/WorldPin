@@ -49,7 +49,7 @@ class GitHubService {
     
     try {
       const sha = await this.getFileSha(PINS_FILE_PATH);
-      const body: any = {
+      const body: Record<string, unknown> = {
         message: `Add pin for ${pin.name}`,
         content,
       };
@@ -134,7 +134,7 @@ class GitHubService {
     const imagePath = `images/${pinId}_${file.name}`;
     const content = await this.fileToBase64(file);
     const upload = async (sha?: string) => {
-      const body: any = {
+      const body: Record<string, unknown> = {
         message: `Upload image for pin ${pinId}`,
         content,
       };

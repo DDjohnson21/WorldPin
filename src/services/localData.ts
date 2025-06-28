@@ -41,7 +41,7 @@ class LocalDataService {
     console.log('Pin updated locally:', this.pins[pinIndex]);
   }
 
-  async uploadImage(file: File, pinId: string): Promise<string> {
+  async uploadImage(file: File): Promise<string> {
     // For local development, return a data URL
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
