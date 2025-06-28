@@ -48,14 +48,18 @@ class GitHubService {
     const content = btoa(JSON.stringify(updatedPins, null, 2));
     
     try {
+      const sha = await this.getFileSha(PINS_FILE_PATH);
+      const body: any = {
+        message: `Add pin for ${pin.name}`,
+        content,
+      };
+      if (sha) {
+        body.sha = sha;
+      }
       const response = await fetch(`${this.baseUrl}/contents/${PINS_FILE_PATH}`, {
         method: 'PUT',
         headers: this.headers,
-        body: JSON.stringify({
-          message: `Add pin for ${pin.name}`,
-          content,
-          sha: await this.getFileSha(PINS_FILE_PATH),
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
