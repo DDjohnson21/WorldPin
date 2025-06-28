@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styled from "@emotion/styled";
 import {
   MapContainer,
@@ -71,6 +71,30 @@ function App() {
   const [editingPin, setEditingPin] = useState<Pin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const pinDictionary = useMemo(() => {
+    const dict: Record<
+      string,
+      {
+        name: string;
+        image: string;
+        description: string;
+        position: [number, number];
+      }
+    > = {};
+    pins.forEach((p) => {
+      dict[p.id] = {
+        name: p.name,
+        image: p.imagePath,
+        description: p.location,
+        position: p.position,
+      };
+    });
+    return dict;
+  }, [pins]);
+
+  useEffect(() => {
+    console.log('Pin dictionary', pinDictionary);
+  }, [pinDictionary]);
 
   // Define world bounds
   const worldBounds: [[number, number], [number, number]] = [

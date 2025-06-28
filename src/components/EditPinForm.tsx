@@ -111,18 +111,6 @@ const FilePreview = styled.img`
   display: ${(props) => (props.src ? "block" : "none")};
 `;
 
-const FileInputLabel = styled.label`
-  padding: 8px 16px;
-  background: #6c757d;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  text-align: center;
-
-  &:hover {
-    background: #5a6268;
-  }
-`;
 
 const CurrentImageContainer = styled.div`
   display: flex;
@@ -204,7 +192,8 @@ const EditPinForm = ({ pin, onSubmit, onCancel }: EditPinFormProps) => {
           setIsProcessing(false);
         };
         reader.readAsDataURL(processedFile);
-      } catch (err) {
+      } catch (error) {
+        console.error(error);
         alert("Failed to process image.");
         setIsProcessing(false);
       }
